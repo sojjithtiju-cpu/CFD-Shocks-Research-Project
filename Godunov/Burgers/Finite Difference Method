@@ -1,0 +1,73 @@
+import matplotlib.pyplot as plt
+final_time = float(input("Enter final time : "))
+final_space = float(input("Enter final space : "))
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+
+space = []
+for i in range(n_space):
+    val = i*dx
+    space.append(val)
+u_init = []
+for i in space:
+    if i < 1:
+        val = 1
+    else:
+        val = 0
+    u_init.append(val)
+
+dt = CFL*(dx/abs(max(u_init)))
+n_time = int(final_time/dt)
+
+u_new = u_init.copy()
+for t in range(n_time):
+    u=[]
+    for i in range(n_space):
+        ip = (i+1)%n_space
+        im = (i-1)%n_space
+
+        if u_new[im] > u_new[i]:
+            shock_speed = 0.5*(u_new[im] + u_new[i])
+            if shock_speed > 0:
+                u_star1 = u_new[im]
+            else:
+                u_star1 = u_new[i]
+        
+        else:
+            if u_new[im] > 0:
+                u_star1 = u_new[im]
+            elif u_new[i] < 0:
+                u_star1 = u_new[i]
+            else:
+                u_star1 = 0
+
+        if u_new[i] > u_new[ip]:
+            shock_speed = 0.5*(u_new[i] + u_new[ip])
+            if shock_speed > 0:
+                u_star2 = u_new[i]
+            else:
+                u_star2 = u_new[ip]
+        
+        else:
+            if u_new[i] > 0:
+                u_star2 = u_new[i]
+            elif u_new[ip] < 0:
+                u_star2 = u_new[ip]
+            else:
+                u_star2 = 0
+
+        E_before = max(0.5*abs(u_new[im] + u_new[i]), ((0.5*(u_new[i]**2) - (u_star1**2) + 0.5*(u_new[im]**2))/(u_new[i] - u_new[im] + 1e-12)))
+        E_after = max(0.5*abs(u_new[i] + u_new[ip]), ((0.5*(u_new[ip]**2) - (u_star2**2) + 0.5*(u_new[i]**2))/(u_new[ip] - u_new[i] + 1e-12)))
+        
+        x = u_new[i] - 0.25*(dt/dx)*(u_new[ip]**2 - u_new[im]**2) + 0.5*(dt/dx)*(E_after*(u_new[ip] - u_new[i]) - E_before*(u_new[i] - u_new[im]))
+        u.append(x)
+    u_new = u.copy()
+
+plt.plot(space, u_init, label = "INITIAL")
+plt.plot(space, u_new, label = "FINAL")
+plt.legend()
+plt.title("BURGERS - GODUNOV")
+plt.xlabel("X")
+plt.ylabel("U(X)")
+plt.show()
