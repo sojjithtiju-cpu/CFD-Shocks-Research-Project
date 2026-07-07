@@ -1,0 +1,50 @@
+import matplotlib.pyplot as plt
+final_time = float(input("Enter final time : "))
+final_space = float(input("Enter final space : "))
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+
+space = []
+for i in range(n_space):
+    val = i*dx
+    space.append(val)
+u_init = []
+for i in space:
+    if i < 1:
+        val = 1
+    else:
+        val = 0
+    u_init.append(val)
+
+dt = CFL*(dx/abs(max(u_init)))
+n_time = int(final_time/dt)
+
+u_new = u_init.copy()
+for t in range(n_time):
+    u=[]
+    for i in range(n_space):
+        ip = (i+1)%n_space
+        im = (i-1)%n_space
+        a_plus = 0.5*(u_new[i] + u_new[ip])
+        a_minus = 0.5*(u_new[im] + u_new[i])
+        
+        if a_plus >= 0 and a_minus >= 0:
+            x = u_new[i] - 0.5*(dt/dx)*(u_new[i]**2 - u_new[im]**2)
+        elif a_plus < 0 and a_minus < 0:
+            x = u_new[i] - 0.5*(dt/dx)*(u_new[ip]**2 - u_new[i]**2)
+        elif a_plus >= 0 and a_minus < 0:
+            x = u_new[i]
+        else:
+            x = u_new[i] - 0.5*(dt/dx)*(u_new[ip]**2 - u_new[im]**2)
+
+        u.append(x)
+    u_new = u.copy()
+
+plt.plot(space, u_init, label = "INITIAL")
+plt.plot(space, u_new, label = "FINAL")
+plt.legend()
+plt.title("BURGERS - ROE")
+plt.xlabel("X")
+plt.ylabel("U(X)")
+plt.show()
