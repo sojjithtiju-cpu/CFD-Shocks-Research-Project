@@ -1,0 +1,40 @@
+import matplotlib.pyplot as plt
+vel = float(input("Enter wave velocity : "))
+final_time = float(input("Enter final time : "))
+final_space = float(input("Enter final space : "))
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+dt = CFL*(dx/abs(vel))
+n_time = int(final_time/dt)
+
+space = []
+for i in range(n_space):
+    val = i*dx
+    space.append(val)
+u_init = []
+for i in space:
+    if i < 1:
+        val = 1
+    else:
+        val = 0
+    u_init.append(val)
+    
+u_new = u_init.copy()
+for t in range(n_time):
+    u=[]
+    for i in range(n_space):
+        ip = (i+1)%n_space
+        im = (i-1)%n_space
+        imm = (i-2)%n_space
+        x = u_new[i] - vel*(dt/dx)*(u_new[i] - u_new[im]) - 0.25*vel*(dt/dx)*(1 - vel*(dt/dx))*(u_new[ip] - u_new[i]) + 0.25*vel*(dt/dx)*(1 - vel*(dt/dx))*(u_new[im] - u_new[imm])
+        u.append(x)
+    u_new = u.copy()
+
+plt.plot(space, u_init, label = "INITIAL")
+plt.plot(space, u_new, label = "FINAL")
+plt.legend()
+plt.title("LINEAR ADVECTION - FROMM")
+plt.xlabel("X")
+plt.ylabel("U(X)")
+plt.show()
