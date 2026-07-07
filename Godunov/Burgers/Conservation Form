@@ -1,0 +1,73 @@
+import matplotlib.pyplot as plt
+final_time = float(input("Enter final time : "))
+final_space = float(input("Enter final space : "))
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+
+space = []
+for i in range(n_space):
+    val = i*dx
+    space.append(val)
+u_init = []
+for i in space:
+    if i < 1:
+        val = 1
+    else:
+        val = 0
+    u_init.append(val)
+
+dt = CFL*(dx/abs(max(u_init)))
+n_time = int(final_time/dt)
+
+u_new = u_init.copy()
+for t in range(n_time):
+    u=[]
+    for i in range(n_space):
+        ip = (i+1)%n_space
+        im = (i-1)%n_space
+
+        if u_new[im] > u_new[i]:
+            shock_speed = 0.5*(u_new[im] + u_new[i])
+            if shock_speed > 0:
+                u_star1 = u_new[im]
+            else:
+                u_star1 = u_new[i]
+        
+        else:
+            if u_new[im] > 0:
+                u_star1 = u_new[im]
+            elif u_new[i] < 0:
+                u_star1 = u_new[i]
+            else:
+                u_star1 = 0
+
+        if u_new[i] > u_new[ip]:
+            shock_speed = 0.5*(u_new[i] + u_new[ip])
+            if shock_speed > 0:
+                u_star2 = u_new[i]
+            else:
+                u_star2 = u_new[ip]
+        
+        else:
+            if u_new[i] > 0:
+                u_star2 = u_new[i]
+            elif u_new[ip] < 0:
+                u_star2 = u_new[ip]
+            else:
+                u_star2 = 0
+
+        flux_before = 0.5*(u_star1**2)
+        flux_after = 0.5*(u_star2**2)
+
+        x = u_new[i] - (dt/dx)*(flux_after - flux_before)
+        u.append(x)
+    u_new = u.copy()
+
+plt.plot(space, u_init, label = "INITIAL")
+plt.plot(space, u_new, label = "FINAL")
+plt.legend()
+plt.title("BURGERS - GODUNOV")
+plt.xlabel("X")
+plt.ylabel("U(X)")
+plt.show()
