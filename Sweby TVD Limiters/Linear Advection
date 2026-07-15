@@ -1,0 +1,204 @@
+import matplotlib.pyplot as plt
+vel = float(input("Enter wave velocity : "))
+final_time = float(input("Enter final time : "))
+final_space = float(input("Enter final space : "))
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+dt = CFL*(dx/abs(vel))
+n_time = int(final_time/dt)
+
+def minmod(r):
+    if r <= 0:
+        return 0
+    elif r > 0 and r < 1:
+        return r
+    else:
+        return 1
+    
+def vanleer(r):
+    if r >= 0:
+        return (2*r)/(1+r)
+    else:
+        return 0
+    
+def superbee(r):
+    if r <= 0:
+        return 0
+    elif r > 0 and r < 0.5:
+        return 2*r
+    elif r >= 0.5 and r < 1:
+        return 1
+    elif r >= 1 and r < 2:
+        return r
+    else:
+        return 2
+
+space = []
+for i in range(n_space):
+    val = i*dx
+    space.append(val)
+u_init_minmod = []
+for i in space:
+    if i < 1:
+        val = 1
+    else:
+        val = 0
+    u_init_minmod.append(val)
+u_init_vanleer = u_init_minmod.copy()
+u_init_superbee = u_init_minmod.copy()
+u_minmod = u_init_minmod.copy()
+u_vanleer = u_init_vanleer.copy()
+u_superbee = u_init_superbee.copy()
+
+for t in range(n_time):
+    u=[]
+    if vel >= 0:
+        for i in range(n_space):
+            ip = (i+1)%n_space
+            im = (i-1)%n_space
+            imm = (i-2)%n_space
+            den_r = u_minmod[ip] - u_minmod[i]
+            if den_r == 0:
+                r = 0
+            else:
+                r = (u_minmod[i] - u_minmod[im])/den_r
+            den_rm = u_minmod[i] - u_minmod[im]
+            if den_rm == 0:
+                rm = 0
+            else:
+                rm = (u_minmod[im] - u_minmod[imm])/den_rm
+            x = u_minmod[i] - (dt/dx)*vel*(u_minmod[i] - u_minmod[im]) - (0.5*dt/dx)*vel*(1 - (dt/dx)*vel)*(minmod(r)*(u_minmod[ip] - u_minmod[i]) - minmod(rm)*(u_minmod[i] - u_minmod[im]))
+            u.append(x)
+        u_minmod = u.copy()
+
+    else:
+        for i in range(n_space):
+            ip = (i+1)%n_space
+            ipp = (i+2)%n_space
+            im = (i-1)%n_space
+            den_r = u_minmod[ip] - u_minmod[i]
+            if den_r == 0:
+                r = 0
+            else:
+                r = (u_minmod[i] - u_minmod[im])/den_r
+            den_rp = u_minmod[ipp] - u_minmod[ip]
+            if den_rp == 0:
+                rp = 0
+            else:
+                rp = (u_minmod[ip] - u_minmod[i])/den_rp
+            x = u_minmod[i] - (dt/dx)*vel*(u_minmod[ip] - u_minmod[i]) - (0.5*dt/dx)*vel*(1 + (dt/dx)*vel)*(minmod(rp)*(u_minmod[ipp] - u_minmod[ip]) - minmod(r)*(u_minmod[ip] - u_minmod[i]))
+            u.append(x)
+        u_minmod = u.copy()
+
+for t in range(n_time):
+    u=[]
+    if vel >= 0:
+        for i in range(n_space):
+            ip = (i+1)%n_space
+            im = (i-1)%n_space
+            imm = (i-2)%n_space
+            den_r = u_vanleer[ip] - u_vanleer[i]
+            if den_r == 0:
+                r = 0
+            else:
+                r = (u_vanleer[i] - u_vanleer[im])/den_r
+            den_rm = u_vanleer[i] - u_vanleer[im]
+            if den_rm == 0:
+                rm = 0
+            else:
+                rm = (u_vanleer[im] - u_vanleer[imm])/den_rm
+            x = u_vanleer[i] - (dt/dx)*vel*(u_vanleer[i] - u_vanleer[im]) - (0.5*dt/dx)*vel*(1 - (dt/dx)*vel)*(vanleer(r)*(u_vanleer[ip] - u_vanleer[i]) - vanleer(rm)*(u_vanleer[i] - u_vanleer[im]))
+            u.append(x)
+        u_vanleer = u.copy()
+
+    else:
+        for i in range(n_space):
+            ip = (i+1)%n_space
+            ipp = (i+2)%n_space
+            im = (i-1)%n_space
+            den_r = u_vanleer[ip] - u_vanleer[i]
+            if den_r == 0:
+                r = 0
+            else:
+                r = (u_vanleer[i] - u_vanleer[im])/den_r
+            den_rp = u_vanleer[ipp] - u_vanleer[ip]
+            if den_rp == 0:
+                rp = 0
+            else:
+                rp = (u_vanleer[ip] - u_vanleer[i])/den_rp
+            x = u_vanleer[i] - (dt/dx)*vel*(u_vanleer[ip] - u_vanleer[i]) - (0.5*dt/dx)*vel*(1 + (dt/dx)*vel)*(vanleer(rp)*(u_vanleer[ipp] - u_vanleer[ip]) - vanleer(r)*(u_vanleer[ip] - u_vanleer[i]))
+            u.append(x)
+        u_vanleer = u.copy()
+
+for t in range(n_time):
+    u=[]
+    if vel >= 0:
+        for i in range(n_space):
+            ip = (i+1)%n_space
+            im = (i-1)%n_space
+            imm = (i-2)%n_space
+            den_r = u_superbee[ip] - u_superbee[i]
+            if den_r == 0:
+                r = 0
+            else:
+                r = (u_superbee[i] - u_superbee[im])/den_r
+            den_rm = u_superbee[i] - u_superbee[im]
+            if den_rm == 0:
+                rm = 0
+            else:
+                rm = (u_superbee[im] - u_superbee[imm])/den_rm
+            x = u_superbee[i] - (dt/dx)*vel*(u_superbee[i] - u_superbee[im]) - (0.5*dt/dx)*vel*(1 - (dt/dx)*vel)*(superbee(r)*(u_superbee[ip] - u_superbee[i]) - superbee(rm)*(u_superbee[i] - u_superbee[im]))
+            u.append(x)
+        u_superbee = u.copy()
+
+    else:
+        for i in range(n_space):
+            ip = (i+1)%n_space
+            ipp = (i+2)%n_space
+            im = (i-1)%n_space
+            den_r = u_superbee[ip] - u_superbee[i]
+            if den_r == 0:
+                r = 0
+            else:
+                r = (u_superbee[i] - u_superbee[im])/den_r
+            den_rp = u_superbee[ipp] - u_superbee[ip]
+            if den_rp == 0:
+                rp = 0
+            else:
+                rp = (u_superbee[ip] - u_superbee[i])/den_rp
+            x = u_superbee[i] - (dt/dx)*vel*(u_superbee[ip] - u_superbee[i]) - (0.5*dt/dx)*vel*(1 + (dt/dx)*vel)*(superbee(rp)*(u_superbee[ipp] - u_superbee[ip]) - superbee(r)*(u_superbee[ip] - u_superbee[i]))
+            u.append(x)
+        u_superbee = u.copy()
+
+plt.figure(figsize=(15,4))
+
+plt.subplot(1,3,1)
+plt.plot(space, u_init_minmod, '--k', label='Initial')
+plt.plot(space, u_minmod, 'b', label='Minmod')
+plt.title("Minmod")
+plt.xlabel("x")
+plt.ylabel("u")
+plt.grid(True)
+plt.legend()
+
+plt.subplot(1,3,2)
+plt.plot(space, u_init_vanleer, '--k', label='Initial')
+plt.plot(space, u_vanleer, 'r', label='Van Leer')
+plt.title("Van Leer")
+plt.xlabel("x")
+plt.ylabel("u")
+plt.grid(True)
+plt.legend()
+
+plt.subplot(1,3,3)
+plt.plot(space, u_init_superbee, '--k', label='Initial')
+plt.plot(space, u_superbee, 'g', label='Superbee')
+plt.title("Superbee")
+plt.xlabel("x")
+plt.ylabel("u")
+plt.grid(True)
+plt.legend()
+
+plt.tight_layout()
+plt.show()
