@@ -1,0 +1,100 @@
+vel = float(input("Enter wave velocity : "))
+final_time = float(input("Enter final time : "))
+final_space = float(input("Enter final space : "))
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+dt = CFL*(dx/abs(vel))
+n_time = int(final_time/dt)
+w = float(input("Enter Compression Parameter : "))
+
+def minmod(a, b):
+    if a*b <= 0:
+        return 0
+    elif abs(a) < abs(b):
+        return a
+    else:
+        return b
+    
+space = []
+for i in range(n_space):
+    val = i*dx
+    space.append(val)
+u_init = []
+for i in space:
+    if i < 1:
+        val = 1
+    else:
+        val = 0
+    u_init.append(val)
+
+u_new = u_init.copy()
+
+for t in range(n_time):
+    u=[]
+    for i in range(n_space):
+        ip = (i+1)%n_space
+        ipp = (i+2)%n_space
+        im = (i-1)%n_space
+        imm = (i-2)%n_space
+
+        fp_lax = 0.5*vel*(u_new[i] + u_new[ip]) - 0.5*(dt/dx)*(vel**2)*(u_new[ip] - u_new[i])
+        fpp_lax = 0.5*vel*(u_new[ip] + u_new[ipp]) - 0.5*(dt/dx)*(vel**2)*(u_new[ipp] - u_new[ip])
+        fm_lax = 0.5*vel*(u_new[im] + u_new[i]) - 0.5*(dt/dx)*(vel**2)*(u_new[i] - u_new[im])
+        fmm_lax = 0.5*vel*(u_new[imm] + u_new[im]) - 0.5*(dt/dx)*(vel**2)*(u_new[im] - u_new[imm])
+        fp_roe = 0.5*vel*(u_new[i] + u_new[ip]) - 0.5*abs(vel)*(u_new[ip] - u_new[i])
+        fpp_roe = 0.5*vel*(u_new[ip] + u_new[ipp]) - 0.5*abs(vel)*(u_new[ipp] - u_new[ip])
+        fm_roe = 0.5*vel*(u_new[im] + u_new[i]) - 0.5*abs(vel)*(u_new[i] - u_new[im])
+        fmm_roe = 0.5*vel*(u_new[imm] + u_new[im]) - 0.5*abs(vel)*(u_new[im] - u_new[imm])
+
+        den = abs(u_new[ip] - u_new[i])+abs(u_new[i] - u_new[im])
+        if den == 0:
+            theta = 0
+        else:
+            theta = abs(u_new[ip] - 2*u_new[i] + u_new[im])/den
+            
+        denp = abs(u_new[ipp] - u_new[ip])+abs(u_new[ip] - u_new[i])
+        if denp == 0:
+            thetap = 0
+        else:
+            thetap = abs(u_new[ipp] - 2*u_new[ip] + u_new[i])/denp
+        denm = abs(u_new[i] - u_new[im])+abs(u_new[im] - u_new[imm])
+
+        if denm == 0:
+            thetam = 0
+        else:
+            thetam = abs(u_new[i] - 2*u_new[im] + u_new[imm])/denm
+
+        F_corr = (1 + w*theta)*(minmod(fp_lax - fp_roe, fm_lax - fm_roe))
+        Fp_corr = (1 + w*thetap)*(minmod(fpp_lax - fpp_roe, fp_lax - fp_roe))
+        Fm_corr = (1 + w*thetam)*(minmod(fm_lax - fm_roe, fmm_lax - fmm_roe))
+        G = vel*u_new[i] + F_corr
+        Gp = vel*u_new[ip] + Fp_corr
+        Gm = vel*u_new[im] + Fm_corr
+
+        den_plus = u_new[ip] - u_new[i]
+        if den_plus == 0:
+            G_plus = 0.5*(G + Gp - abs(vel)*(u_new[ip] - u_new[i]))
+        else:
+            G_plus = 0.5*(G + Gp - abs((Gp - G)/den_plus)*(u_new[ip] - u_new[i]))
+
+        den_minus = u_new[i] - u_new[im]
+        if den_minus == 0:
+            G_minus = 0.5*(G + Gm - abs(vel)*(u_new[i] - u_new[im]))
+        else:
+            G_minus = 0.5*(G + Gm - abs((G - Gm)/den_minus)*(u_new[i] - u_new[im]))
+        x = u_new[i] - (dt/dx)*(G_plus - G_minus)
+        u.append(x)
+    u_new = u.copy()
+
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(8,5))
+plt.plot(space, u_init, label="Initial", linewidth=2)
+plt.plot(space, u_new, label="Finals", linewidth=2)
+plt.xlabel("x")
+plt.ylabel("u")
+plt.title("Harten TVD - Linear Advection")
+plt.grid(True)
+plt.legend()
+plt.show()
