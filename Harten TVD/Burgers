@@ -1,0 +1,103 @@
+final_time = float(input("Enter final time : "))
+final_space = float(input("Enter final space : "))
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+w = float(input("Enter Compression Parameter : "))
+
+def minmod(a, b):
+    if a*b <= 0:
+        return 0
+    elif abs(a) < abs(b):
+        return a
+    else:
+        return b
+    
+space = []
+for i in range(n_space):
+    val = i*dx
+    space.append(val)
+u_init = []
+for i in space:
+    if i < 1:
+        val = 1
+    else:
+        val = 0
+    u_init.append(val)
+
+u_new = u_init.copy()
+
+t = 0
+while t < final_time:
+    dt = CFL*dx/max(abs(val) for val in u_new)
+    u=[]
+    for i in range(n_space):
+        ip = (i+1)%n_space
+        ipp = (i+2)%n_space
+        im = (i-1)%n_space
+        imm = (i-2)%n_space
+
+        fp_lax = 0.25*(u_new[i]**2 + u_new[ip]**2) - 0.125*(dt/dx)*(u_new[ip] + u_new[i])*(u_new[ip]**2 - u_new[i]**2)
+        fpp_lax = 0.25*(u_new[ip]**2 + u_new[ipp]**2) - 0.125*(dt/dx)*(u_new[ipp] + u_new[ip])*(u_new[ipp]**2 - u_new[ip]**2)
+        fm_lax = 0.25*(u_new[im]**2 + u_new[i]**2) - 0.125*(dt/dx)*(u_new[i] + u_new[im])*(u_new[i]**2 - u_new[im]**2)
+        fmm_lax = 0.25*(u_new[imm]**2 + u_new[im]**2) - 0.125*(dt/dx)*(u_new[im] + u_new[imm])*(u_new[im]**2 - u_new[imm]**2)
+        fp_roe = 0.25*(u_new[i]**2 + u_new[ip]**2) - 0.125*abs(u_new[i] + u_new[ip])*(u_new[ip] - u_new[i])
+        fpp_roe = 0.25*(u_new[ip]**2 + u_new[ipp]**2) - 0.125*abs(u_new[ip] + u_new[ipp])*(u_new[ipp] - u_new[ip])
+        fm_roe = 0.25*(u_new[im]**2 + u_new[i]**2) - 0.125*abs(u_new[im] + u_new[i])*(u_new[i] - u_new[im])
+        fmm_roe = 0.25*(u_new[imm]**2 + u_new[im]**2) - 0.125*abs(u_new[imm] + u_new[im])*(u_new[im] - u_new[imm])
+
+        den = abs(u_new[ip] - u_new[i])+abs(u_new[i] - u_new[im])
+        if den == 0:
+            theta = 0
+        else:
+            theta = abs(u_new[ip] - 2*u_new[i] + u_new[im])/den
+            
+        denp = abs(u_new[ipp] - u_new[ip])+abs(u_new[ip] - u_new[i])
+        if denp == 0:
+            thetap = 0
+        else:
+            thetap = abs(u_new[ipp] - 2*u_new[ip] + u_new[i])/denp
+        denm = abs(u_new[i] - u_new[im])+abs(u_new[im] - u_new[imm])
+
+        if denm == 0:
+            thetam = 0
+        else:
+            thetam = abs(u_new[i] - 2*u_new[im] + u_new[imm])/denm
+
+        F_corr = (1 + w*theta)*(minmod(fp_lax - fp_roe, fm_lax - fm_roe))
+        Fp_corr = (1 + w*thetap)*(minmod(fpp_lax - fpp_roe, fp_lax - fp_roe))
+        Fm_corr = (1 + w*thetam)*(minmod(fm_lax - fm_roe, fmm_lax - fmm_roe))
+        G = F_corr + 0.5*(u_new[i]**2)
+        Gp = Fp_corr + 0.5*(u_new[ip]**2)
+        Gm = Fm_corr + 0.5*(u_new[im]**2)
+
+        den_plus = u_new[ip] - u_new[i]
+        if den_plus == 0:
+            G_plus = 0.5*(G + Gp - abs(0.5*(u_new[i] + u_new[ip]))*(u_new[ip] - u_new[i]))
+        else:
+            G_plus = 0.5*(G + Gp - abs((Gp - G)/den_plus)*(u_new[ip] - u_new[i]))
+
+        den_minus = u_new[i] - u_new[im]
+        if den_minus == 0:
+            G_minus = 0.5*(G + Gm - abs(0.5*(u_new[im] + u_new[i]))*(u_new[i] - u_new[im]))
+        else:
+            G_minus = 0.5*(G + Gm - abs((G - Gm)/den_minus)*(u_new[i] - u_new[im]))
+        x = u_new[i] - (dt/dx)*(G_plus - G_minus)
+        u.append(x)
+    u_new = u.copy()
+
+    if t + dt > final_time:
+        dt = final_time - t
+    t = t + dt
+
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(8,5))
+plt.plot(space, u_init, label="Initial", linewidth=2)
+plt.plot(space, u_new, label="Finals", linewidth=2)
+plt.xlabel("x")
+plt.ylabel("u")
+plt.title("Harten TVD - Burgers")
+plt.grid(True)
+plt.legend()
+plt.show()
