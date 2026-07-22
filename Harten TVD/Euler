@@ -1,0 +1,404 @@
+final_time = float(input("Enter final time : "))
+final_space = 1
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+w = float(input("Enter Compression Parameter : "))
+
+def minmod(a, b):
+    if a*b <= 0:
+        return 0
+    elif abs(a) < abs(b):
+        return a
+    else:
+        return b
+
+rho = []
+u = []
+p = []
+
+for i in range(n_space+1):
+
+    if i < n_space/2:
+        rho.append(1)
+        u.append(0)
+        p.append(1)
+    else:
+        rho.append(0.125)
+        u.append(0)
+        p.append(0.1)
+
+U = []
+for i in range(n_space+1):
+    den_init = rho[i]
+    mom_init = rho[i]*u[i]
+    ener_init = (2.5*p[i]) + (0.5*rho[i]*(u[i]**2))
+    U.append([den_init, mom_init, ener_init])
+
+U_new = U.copy()
+t = 0
+while t < final_time:
+
+    U_add = []
+    sound_speed = []
+    for i in range(1, n_space):
+        velocity = U_new[i][1]/U_new[i][0]
+        pressure = 0.4*(U_new[i][2] - 0.5*U_new[i][0]*(velocity**2))
+        sound = (1.4*pressure/U_new[i][0])**0.5
+        sound_speed.append(abs(velocity) + sound)
+    dt = CFL*dx/max(sound_speed)
+
+    if t + dt > final_time:
+        dt = final_time - t
+
+    for i in range(2, n_space-1):
+
+        den_rho = abs(U_new[i+1][0] - U_new[i][0])+abs(U_new[i][0] - U_new[i-1][0])
+        if den_rho == 0:
+            theta_rho = 0
+        else:
+            theta_rho = abs(U_new[i+1][0] - 2*U_new[i][0] + U_new[i-1][0])/den_rho  
+        denp_rho = abs(U_new[i+2][0] - U_new[i+1][0])+abs(U_new[i+1][0] - U_new[i][0])
+        if denp_rho == 0:
+            thetap_rho = 0
+        else:
+            thetap_rho = abs(U_new[i+2][0] - 2*U_new[i+1][0] + U_new[i][0])/denp_rho
+        denm_rho = abs(U_new[i][0] - U_new[i-1][0])+abs(U_new[i-1][0] - U_new[i-2][0])
+        if denm_rho == 0:
+            thetam_rho = 0
+        else:
+            thetam_rho = abs(U_new[i][0] - 2*U_new[i-1][0] + U_new[i-2][0])/denm_rho
+
+        den_p = abs(U_new[i+1][1] - U_new[i][1])+abs(U_new[i][1] - U_new[i-1][1])
+        if den_p == 0:
+            theta_p = 0
+        else:
+            theta_p = abs(U_new[i+1][1] - 2*U_new[i][1] + U_new[i-1][1])/den_p  
+        denp_p = abs(U_new[i+2][1] - U_new[i+1][1])+abs(U_new[i+1][1] - U_new[i][1])
+        if denp_p == 0:
+            thetap_p = 0
+        else:
+            thetap_p = abs(U_new[i+2][1] - 2*U_new[i+1][1] + U_new[i][1])/denp_p
+        denm_p = abs(U_new[i][1] - U_new[i-1][1])+abs(U_new[i-1][1] - U_new[i-2][1])
+        if denm_p == 0:
+            thetam_p = 0
+        else:
+            thetam_p = abs(U_new[i][1] - 2*U_new[i-1][1] + U_new[i-2][1])/denm_p
+
+        den_ener = abs(U_new[i+1][2] - U_new[i][2])+abs(U_new[i][2] - U_new[i-1][2])
+        if den_ener == 0:
+            theta_ener = 0
+        else:
+            theta_ener = abs(U_new[i+1][2] - 2*U_new[i][2] + U_new[i-1][2])/den_ener 
+        denp_ener = abs(U_new[i+2][2] - U_new[i+1][2])+abs(U_new[i+1][2] - U_new[i][2])
+        if denp_ener == 0:
+            thetap_ener = 0
+        else:
+            thetap_ener = abs(U_new[i+2][2] - 2*U_new[i+1][2] + U_new[i][2])/denp_ener
+        denm_ener = abs(U_new[i][2] - U_new[i-1][2])+abs(U_new[i-1][2] - U_new[i-2][2])
+        if denm_ener == 0:
+            thetam_ener = 0
+        else:
+            thetam_ener = abs(U_new[i][2] - 2*U_new[i-1][2] + U_new[i-2][2])/denm_ener
+
+        vel_l = U_new[i-1][1]/U_new[i-1][0]
+        vel_ll = U_new[i-2][1]/U_new[i-2][0]
+        vel_c = U_new[i][1]/U_new[i][0]
+        vel_r = U_new[i+1][1]/U_new[i+1][0]
+        vel_rr = U_new[i+2][1]/U_new[i+2][0]
+        p_l = 0.4*(U_new[i-1][2] - 0.5*U_new[i-1][0]*(vel_l**2))
+        p_ll = 0.4*(U_new[i-2][2] - 0.5*U_new[i-2][0]*(vel_ll**2))
+        p_c = 0.4*(U_new[i][2] - 0.5*U_new[i][0]*(vel_c**2))
+        p_r = 0.4*(U_new[i+1][2] - 0.5*U_new[i+1][0]*(vel_r**2))
+        p_rr = 0.4*(U_new[i+2][2] - 0.5*U_new[i+2][0]*(vel_rr**2))
+        enth_l = (U_new[i-1][2] + p_l)/U_new[i-1][0]
+        enth_ll = (U_new[i-2][2] + p_ll)/U_new[i-2][0]
+        enth_c = (U_new[i][2] + p_c)/U_new[i][0]
+        enth_r = (U_new[i+1][2] + p_r)/U_new[i+1][0]
+        enth_rr = (U_new[i+2][2] + p_rr)/U_new[i+2][0]
+
+        lw_rho_plus = 0.5*(U_new[i+1][0] + U_new[i][0]) - 0.5*(dt/dx)*(U_new[i+1][0]*vel_r - U_new[i][0]*vel_c)
+        lw_rho_minus = 0.5*(U_new[i][0] + U_new[i-1][0]) - 0.5*(dt/dx)*(U_new[i][0]*vel_c - U_new[i-1][0]*vel_l)
+        lw_rho_pplus = 0.5*(U_new[i+2][0] + U_new[i+1][0]) - 0.5*(dt/dx)*(U_new[i+2][0]*vel_rr - U_new[i+1][0]*vel_r)
+        lw_rho_mminus = 0.5*(U_new[i-1][0] + U_new[i-2][0]) - 0.5*(dt/dx)*(U_new[i-1][0]*vel_l - U_new[i-2][0]*vel_ll)
+        lw_mom_plus = 0.5*(U_new[i+1][1] + U_new[i][1]) - 0.5*(dt/dx)*(U_new[i+1][0]*(vel_r**2) + p_r - U_new[i][0]*(vel_c**2) - p_c)
+        lw_mom_minus = 0.5*(U_new[i][1] + U_new[i-1][1]) - 0.5*(dt/dx)*(U_new[i][0]*(vel_c**2) + p_c - U_new[i-1][0]*(vel_l**2) - p_l)
+        lw_mom_pplus = 0.5*(U_new[i+2][1] + U_new[i+1][1]) - 0.5*(dt/dx)*(U_new[i+2][0]*(vel_rr**2) + p_rr - U_new[i+1][0]*(vel_r**2) - p_r)
+        lw_mom_mminus = 0.5*(U_new[i-1][1] + U_new[i-2][1]) - 0.5*(dt/dx)*(U_new[i-1][0]*(vel_l**2) + p_l - U_new[i-2][0]*(vel_ll**2) - p_ll)
+        lw_ener_plus = 0.5*(U_new[i+1][2] + U_new[i][2]) - 0.5*(dt/dx)*(vel_r*(U_new[i+1][2] + p_r) - vel_c*(U_new[i][2] + p_c))
+        lw_ener_minus = 0.5*(U_new[i][2] + U_new[i-1][2]) - 0.5*(dt/dx)*(vel_c*(U_new[i][2] + p_c) - vel_l*(U_new[i-1][2] + p_l))
+        lw_ener_pplus = 0.5*(U_new[i+2][2] + U_new[i+1][2]) - 0.5*(dt/dx)*(vel_rr*(U_new[i+2][2] + p_rr) - vel_r*(U_new[i+1][2] + p_r))
+        lw_ener_mminus = 0.5*(U_new[i-1][2] + U_new[i-2][2]) - 0.5*(dt/dx)*(vel_l*(U_new[i-1][2] + p_l) - vel_ll*(U_new[i-2][2] + p_ll))
+        lw_vel_plus = lw_mom_plus/lw_rho_plus
+        lw_vel_minus = lw_mom_minus/lw_rho_minus
+        lw_vel_pplus = lw_mom_pplus/lw_rho_pplus
+        lw_vel_mminus = lw_mom_mminus/lw_rho_mminus
+        lw_p_plus = 0.4*(lw_ener_plus - 0.5*lw_rho_plus*(lw_vel_plus**2))
+        lw_p_minus = 0.4*(lw_ener_minus - 0.5*lw_rho_minus*(lw_vel_minus**2))
+        lw_p_pplus = 0.4*(lw_ener_pplus - 0.5*lw_rho_pplus*(lw_vel_pplus**2))
+        lw_p_mminus = 0.4*(lw_ener_mminus - 0.5*lw_rho_mminus*(lw_vel_mminus**2))
+
+        Fp_rho_lw = lw_rho_plus*lw_vel_plus
+        Fpp_rho_lw = lw_rho_pplus*lw_vel_pplus
+        Fm_rho_lw = lw_rho_minus*lw_vel_minus
+        Fmm_rho_lw = lw_rho_mminus*lw_vel_mminus
+        Fp_mom_lw = lw_rho_plus*(lw_vel_plus**2) + lw_p_plus
+        Fpp_mom_lw = lw_rho_pplus*(lw_vel_pplus**2) + lw_p_pplus
+        Fm_mom_lw = lw_rho_minus*(lw_vel_minus**2) + lw_p_minus
+        Fmm_mom_lw = lw_rho_mminus*(lw_vel_mminus**2) + lw_p_mminus
+        Fp_ener_lw = lw_vel_plus*(lw_p_plus + lw_ener_plus)
+        Fpp_ener_lw = lw_vel_pplus*(lw_p_pplus + lw_ener_pplus)
+        Fm_ener_lw = lw_vel_minus*(lw_p_minus + lw_ener_minus)
+        Fmm_ener_lw = lw_vel_mminus*(lw_p_mminus + lw_ener_mminus)
+
+        roe_rho_plus = (U_new[i][0]*U_new[i+1][0])**0.5
+        roe_rho_pplus = (U_new[i+1][0]*U_new[i+2][0])**0.5
+        roe_rho_minus = (U_new[i-1][0]*U_new[i][0])**0.5
+        roe_rho_mminus = (U_new[i-2][0]*U_new[i-1][0])**0.5
+        roe_vel_plus = (vel_c*(U_new[i][0]**0.5) + vel_r*(U_new[i+1][0]**0.5))/(U_new[i][0]**0.5 + U_new[i+1][0]**0.5)
+        roe_vel_pplus = (vel_r*(U_new[i+1][0]**0.5) + vel_rr*(U_new[i+2][0]**0.5))/(U_new[i+1][0]**0.5 + U_new[i+2][0]**0.5)
+        roe_vel_minus = (vel_l*(U_new[i-1][0]**0.5) + vel_c*(U_new[i][0]**0.5))/(U_new[i-1][0]**0.5 + U_new[i][0]**0.5)
+        roe_vel_mminus = (vel_ll*(U_new[i-2][0]**0.5) + vel_l*(U_new[i-1][0]**0.5))/(U_new[i-2][0]**0.5 + U_new[i-1][0]**0.5)
+        roe_enth_plus = (enth_c*(U_new[i][0]**0.5) + enth_r*(U_new[i+1][0]**0.5))/(U_new[i][0]**0.5 + U_new[i+1][0]**0.5)
+        roe_enth_pplus = (enth_r*(U_new[i+1][0]**0.5) + enth_rr*(U_new[i+2][0]**0.5))/(U_new[i+1][0]**0.5 + U_new[i+2][0]**0.5)
+        roe_enth_minus = (enth_l*(U_new[i-1][0]**0.5) + enth_c*(U_new[i][0]**0.5))/(U_new[i-1][0]**0.5 + U_new[i][0]**0.5)
+        roe_enth_mminus = (enth_ll*(U_new[i-2][0]**0.5) + enth_l*(U_new[i-1][0]**0.5))/(U_new[i-2][0]**0.5 + U_new[i-1][0]**0.5)
+        roe_sound_plus = (0.4*(roe_enth_plus - 0.5*(roe_vel_plus**2)))**0.5
+        roe_sound_pplus = (0.4*(roe_enth_pplus - 0.5*(roe_vel_pplus**2)))**0.5
+        roe_sound_minus = (0.4*(roe_enth_minus - 0.5*(roe_vel_minus**2)))**0.5
+        roe_sound_mminus = (0.4*(roe_enth_mminus - 0.5*(roe_vel_mminus**2)))**0.5
+        
+        roe_lam1_plus = roe_vel_plus - roe_sound_plus
+        roe_lam1_pplus = roe_vel_pplus - roe_sound_pplus
+        roe_lam2_plus = roe_vel_plus
+        roe_lam2_pplus = roe_vel_pplus
+        roe_lam3_plus = roe_vel_plus + roe_sound_plus
+        roe_lam3_pplus = roe_vel_pplus + roe_sound_pplus
+        roe_lam1_minus = roe_vel_minus - roe_sound_minus
+        roe_lam1_mminus = roe_vel_mminus - roe_sound_mminus
+        roe_lam2_minus = roe_vel_minus
+        roe_lam2_mminus = roe_vel_mminus
+        roe_lam3_minus = roe_vel_minus + roe_sound_minus
+        roe_lam3_mminus = roe_vel_mminus + roe_sound_mminus
+
+        roe_r11_plus = 1
+        roe_r11_pplus = 1
+        roe_r12_plus = roe_vel_plus - roe_sound_plus
+        roe_r12_pplus = roe_vel_pplus - roe_sound_pplus
+        roe_r13_plus = roe_enth_plus - roe_vel_plus*roe_sound_plus
+        roe_r13_pplus = roe_enth_pplus - roe_vel_pplus*roe_sound_pplus
+        roe_r11_minus = 1
+        roe_r11_mminus = 1
+        roe_r12_minus = roe_vel_minus - roe_sound_minus
+        roe_r12_mminus = roe_vel_mminus - roe_sound_mminus
+        roe_r13_minus = roe_enth_minus - roe_vel_minus*roe_sound_minus
+        roe_r13_mminus = roe_enth_mminus - roe_vel_mminus*roe_sound_mminus
+        roe_r21_plus = 1
+        roe_r21_pplus = 1
+        roe_r22_plus = roe_vel_plus
+        roe_r22_pplus = roe_vel_pplus
+        roe_r23_plus = 0.5*(roe_vel_plus**2)
+        roe_r23_pplus = 0.5*(roe_vel_pplus**2)
+        roe_r21_minus = 1
+        roe_r21_mminus = 1
+        roe_r22_minus = roe_vel_minus
+        roe_r22_mminus = roe_vel_mminus
+        roe_r23_minus = 0.5*(roe_vel_minus**2)
+        roe_r23_mminus = 0.5*(roe_vel_mminus**2)
+        roe_r31_plus = 1
+        roe_r31_pplus = 1
+        roe_r32_plus = roe_vel_plus + roe_sound_plus
+        roe_r32_pplus = roe_vel_pplus + roe_sound_pplus
+        roe_r33_plus = roe_enth_plus + roe_vel_plus*roe_sound_plus
+        roe_r33_pplus = roe_enth_pplus + roe_vel_pplus*roe_sound_pplus
+        roe_r31_minus = 1
+        roe_r31_mminus = 1
+        roe_r32_minus = roe_vel_minus + roe_sound_minus
+        roe_r32_mminus = roe_vel_mminus + roe_sound_mminus
+        roe_r33_minus = roe_enth_minus + roe_vel_minus*roe_sound_minus
+        roe_r33_mminus = roe_enth_mminus + roe_vel_mminus*roe_sound_mminus
+
+        roe_l11_plus = 0.1*((roe_vel_plus**2)/(roe_sound_plus**2)) + 0.5*(roe_vel_plus/roe_sound_plus)
+        roe_l11_pplus = 0.1*((roe_vel_pplus**2)/(roe_sound_pplus**2)) + 0.5*(roe_vel_pplus/roe_sound_pplus)
+        roe_l12_plus = -0.2*((roe_vel_plus)/(roe_sound_plus**2)) - (0.5/roe_sound_plus)
+        roe_l12_pplus = -0.2*((roe_vel_pplus)/(roe_sound_pplus**2)) - (0.5/roe_sound_pplus)
+        roe_l13_plus = 0.2/(roe_sound_plus**2)
+        roe_l13_pplus = 0.2/(roe_sound_pplus**2)
+        roe_l11_minus = 0.1*((roe_vel_minus**2)/(roe_sound_minus**2)) + 0.5*(roe_vel_minus/roe_sound_minus)
+        roe_l11_mminus = 0.1*((roe_vel_mminus**2)/(roe_sound_mminus**2)) + 0.5*(roe_vel_mminus/roe_sound_mminus)
+        roe_l12_minus = -0.2*((roe_vel_minus)/(roe_sound_minus**2)) - (0.5/roe_sound_minus)
+        roe_l12_mminus = -0.2*((roe_vel_mminus)/(roe_sound_mminus**2)) - (0.5/roe_sound_mminus)
+        roe_l13_minus = 0.2/(roe_sound_minus**2)
+        roe_l13_mminus = 0.2/(roe_sound_mminus**2)
+        roe_l21_plus = 1 - 0.2*((roe_vel_plus**2)/(roe_sound_plus**2))
+        roe_l21_pplus = 1 - 0.2*((roe_vel_pplus**2)/(roe_sound_pplus**2))
+        roe_l22_plus = 0.4*roe_vel_plus/(roe_sound_plus**2)
+        roe_l22_pplus = 0.4*roe_vel_pplus/(roe_sound_pplus**2)
+        roe_l23_plus = -0.4/(roe_sound_plus**2)
+        roe_l23_pplus = -0.4/(roe_sound_pplus**2)
+        roe_l21_minus = 1 - 0.2*((roe_vel_minus**2)/(roe_sound_minus**2))
+        roe_l21_mminus = 1 - 0.2*((roe_vel_mminus**2)/(roe_sound_mminus**2))
+        roe_l22_minus = 0.4*roe_vel_minus/(roe_sound_minus**2)
+        roe_l22_mminus = 0.4*roe_vel_mminus/(roe_sound_mminus**2)
+        roe_l23_minus = -0.4/(roe_sound_minus**2)
+        roe_l23_mminus = -0.4/(roe_sound_mminus**2)
+        roe_l31_plus = 0.1*((roe_vel_plus**2)/(roe_sound_plus**2)) - 0.5*(roe_vel_plus/roe_sound_plus)
+        roe_l31_pplus = 0.1*((roe_vel_pplus**2)/(roe_sound_pplus**2)) - 0.5*(roe_vel_pplus/roe_sound_pplus)
+        roe_l32_plus = -0.2*roe_vel_plus/(roe_sound_plus**2) + (0.5/roe_sound_plus)
+        roe_l32_pplus = -0.2*roe_vel_pplus/(roe_sound_pplus**2) + (0.5/roe_sound_pplus)
+        roe_l33_plus = 0.2/(roe_sound_plus**2)
+        roe_l33_pplus = 0.2/(roe_sound_pplus**2)
+        roe_l31_minus = 0.1*((roe_vel_minus**2)/(roe_sound_minus**2)) - 0.5*(roe_vel_minus/roe_sound_minus)
+        roe_l31_mminus = 0.1*((roe_vel_mminus**2)/(roe_sound_mminus**2)) - 0.5*(roe_vel_mminus/roe_sound_mminus)
+        roe_l32_minus = -0.2*roe_vel_minus/(roe_sound_minus**2) + (0.5/roe_sound_minus)
+        roe_l32_mminus = -0.2*roe_vel_mminus/(roe_sound_mminus**2) + (0.5/roe_sound_mminus)
+        roe_l33_minus = 0.2/(roe_sound_minus**2)
+        roe_l33_mminus = 0.2/(roe_sound_mminus**2)
+
+        roe_dv1_plus = roe_l11_plus*(U_new[i+1][0] - U_new[i][0]) + roe_l12_plus*(U_new[i+1][1] - U_new[i][1]) + roe_l13_plus*(U_new[i+1][2] - U_new[i][2])
+        roe_dv1_pplus = roe_l11_pplus*(U_new[i+2][0] - U_new[i+1][0]) + roe_l12_pplus*(U_new[i+2][1] - U_new[i+1][1]) + roe_l13_pplus*(U_new[i+2][2] - U_new[i+1][2])
+        roe_dv1_minus = roe_l11_minus*(U_new[i][0] - U_new[i-1][0]) + roe_l12_minus*(U_new[i][1] - U_new[i-1][1]) + roe_l13_minus*(U_new[i][2] - U_new[i-1][2])
+        roe_dv1_mminus = roe_l11_mminus*(U_new[i-1][0] - U_new[i-2][0]) + roe_l12_mminus*(U_new[i-1][1] - U_new[i-2][1]) + roe_l13_mminus*(U_new[i-1][2] - U_new[i-2][2])
+        roe_dv2_plus = roe_l21_plus*(U_new[i+1][0] - U_new[i][0]) + roe_l22_plus*(U_new[i+1][1] - U_new[i][1]) + roe_l23_plus*(U_new[i+1][2] - U_new[i][2])
+        roe_dv2_pplus = roe_l21_pplus*(U_new[i+2][0] - U_new[i+1][0]) + roe_l22_pplus*(U_new[i+2][1] - U_new[i+1][1]) + roe_l23_pplus*(U_new[i+2][2] - U_new[i+1][2])
+        roe_dv2_minus = roe_l21_minus*(U_new[i][0] - U_new[i-1][0]) + roe_l22_minus*(U_new[i][1] - U_new[i-1][1]) + roe_l23_minus*(U_new[i][2] - U_new[i-1][2])
+        roe_dv2_mminus = roe_l21_mminus*(U_new[i-1][0] - U_new[i-2][0]) + roe_l22_mminus*(U_new[i-1][1] - U_new[i-2][1]) + roe_l23_mminus*(U_new[i-1][2] - U_new[i-2][2])
+        roe_dv3_plus = roe_l31_plus*(U_new[i+1][0] - U_new[i][0]) + roe_l32_plus*(U_new[i+1][1] - U_new[i][1]) + roe_l33_plus*(U_new[i+1][2] - U_new[i][2])
+        roe_dv3_pplus = roe_l31_pplus*(U_new[i+2][0] - U_new[i+1][0]) + roe_l32_pplus*(U_new[i+2][1] - U_new[i+1][1]) + roe_l33_pplus*(U_new[i+2][2] - U_new[i+1][2])
+        roe_dv3_minus = roe_l31_minus*(U_new[i][0] - U_new[i-1][0]) + roe_l32_minus*(U_new[i][1] - U_new[i-1][1]) + roe_l33_minus*(U_new[i][2] - U_new[i-1][2])
+        roe_dv3_mminus = roe_l31_mminus*(U_new[i-1][0] - U_new[i-2][0]) + roe_l32_mminus*(U_new[i-1][1] - U_new[i-2][1]) + roe_l33_mminus*(U_new[i-1][2] - U_new[i-2][2])
+
+        Fp_rho_roe = 0.5*(U_new[i+1][0]*vel_r + U_new[i][0]*vel_c) - 0.5*(abs(roe_lam1_plus)*roe_dv1_plus*roe_r11_plus + abs(roe_lam2_plus)*roe_dv2_plus*roe_r21_plus + abs(roe_lam3_plus)*roe_dv3_plus*roe_r31_plus)
+        Fpp_rho_roe = 0.5*(U_new[i+2][0]*vel_rr + U_new[i+1][0]*vel_r) - 0.5*(abs(roe_lam1_pplus)*roe_dv1_pplus*roe_r11_pplus + abs(roe_lam2_pplus)*roe_dv2_pplus*roe_r21_pplus + abs(roe_lam3_pplus)*roe_dv3_pplus*roe_r31_pplus)
+        Fm_rho_roe = 0.5*(U_new[i][0]*vel_c + U_new[i-1][0]*vel_l) - 0.5*(abs(roe_lam1_minus)*roe_dv1_minus*roe_r11_minus + abs(roe_lam2_minus)*roe_dv2_minus*roe_r21_minus + abs(roe_lam3_minus)*roe_dv3_minus*roe_r31_minus)
+        Fmm_rho_roe = 0.5*(U_new[i-1][0]*vel_l + U_new[i-2][0]*vel_ll) - 0.5*(abs(roe_lam1_mminus)*roe_dv1_mminus*roe_r11_mminus + abs(roe_lam2_mminus)*roe_dv2_mminus*roe_r21_mminus + abs(roe_lam3_mminus)*roe_dv3_mminus*roe_r31_mminus)
+        Fp_mom_roe = 0.5*(U_new[i+1][0]*(vel_r**2) + p_r + U_new[i][0]*(vel_c**2) + p_c) - 0.5*(abs(roe_lam1_plus)*roe_dv1_plus*roe_r12_plus + abs(roe_lam2_plus)*roe_dv2_plus*roe_r22_plus + abs(roe_lam3_plus)*roe_dv3_plus*roe_r32_plus)
+        Fpp_mom_roe = 0.5*(U_new[i+2][0]*(vel_rr**2) + p_rr + U_new[i+1][0]*(vel_r**2) + p_r) - 0.5*(abs(roe_lam1_pplus)*roe_dv1_pplus*roe_r12_pplus + abs(roe_lam2_pplus)*roe_dv2_pplus*roe_r22_pplus + abs(roe_lam3_pplus)*roe_dv3_pplus*roe_r32_pplus)
+        Fm_mom_roe = 0.5*(U_new[i][0]*(vel_c**2) + p_c + U_new[i-1][0]*(vel_l**2) + p_l) - 0.5*(abs(roe_lam1_minus)*roe_dv1_minus*roe_r12_minus + abs(roe_lam2_minus)*roe_dv2_minus*roe_r22_minus + abs(roe_lam3_minus)*roe_dv3_minus*roe_r32_minus)
+        Fmm_mom_roe = 0.5*(U_new[i-1][0]*(vel_l**2) + p_l + U_new[i-2][0]*(vel_ll**2) + p_ll) - 0.5*(abs(roe_lam1_mminus)*roe_dv1_mminus*roe_r12_mminus + abs(roe_lam2_mminus)*roe_dv2_mminus*roe_r22_mminus + abs(roe_lam3_mminus)*roe_dv3_mminus*roe_r32_mminus)
+        Fp_ener_roe = 0.5*(vel_r*(U_new[i+1][2] + p_r) + vel_c*(U_new[i][2] + p_c)) - 0.5*(abs(roe_lam1_plus)*roe_dv1_plus*roe_r13_plus + abs(roe_lam2_plus)*roe_dv2_plus*roe_r23_plus + abs(roe_lam3_plus)*roe_dv3_plus*roe_r33_plus)
+        Fpp_ener_roe = 0.5*(vel_rr*(U_new[i+2][2] + p_rr) + vel_r*(U_new[i+1][2] + p_r)) - 0.5*(abs(roe_lam1_pplus)*roe_dv1_pplus*roe_r13_pplus + abs(roe_lam2_pplus)*roe_dv2_pplus*roe_r23_pplus + abs(roe_lam3_pplus)*roe_dv3_pplus*roe_r33_pplus)
+        Fm_ener_roe = 0.5*(vel_c*(U_new[i][2] + p_c) + vel_l*(U_new[i-1][2] + p_l)) - 0.5*(abs(roe_lam1_minus)*roe_dv1_minus*roe_r13_minus + abs(roe_lam2_minus)*roe_dv2_minus*roe_r23_minus + abs(roe_lam3_minus)*roe_dv3_minus*roe_r33_minus)
+        Fmm_ener_roe = 0.5*(vel_l*(U_new[i-1][2] + p_l) + vel_ll*(U_new[i-2][2] + p_ll)) - 0.5*(abs(roe_lam1_mminus)*roe_dv1_mminus*roe_r13_mminus + abs(roe_lam2_mminus)*roe_dv2_mminus*roe_r23_mminus + abs(roe_lam3_mminus)*roe_dv3_mminus*roe_r33_mminus)
+
+        F_rho_corr = (1 + w*theta_rho)*(minmod(Fp_rho_lw - Fp_rho_roe, Fm_rho_lw - Fm_rho_roe)) 
+        Fp_rho_corr = (1 + w*thetap_rho)*(minmod(Fpp_rho_lw - Fpp_rho_roe, Fp_rho_lw - Fp_rho_roe))
+        Fm_rho_corr = (1 + w*thetam_rho)*(minmod(Fm_rho_lw - Fm_rho_roe, Fmm_rho_lw - Fmm_rho_roe                    ))
+        G_rho = F_rho_corr + Fp_rho_roe
+        Gp_rho = Fp_rho_corr + Fpp_rho_roe
+        Gm_rho = Fm_rho_corr + Fm_rho_roe
+        F_p_corr = (1 + w*theta_p)*(minmod(Fp_mom_lw - Fp_mom_roe, Fm_mom_lw - Fm_mom_roe))
+        Fp_p_corr = (1 + w*thetap_p)*(minmod(Fpp_mom_lw - Fpp_mom_roe, Fp_mom_lw - Fp_mom_roe))
+        Fm_p_corr = (1 + w*thetam_p)*(minmod(Fm_mom_lw - Fm_mom_roe, Fmm_mom_lw - Fmm_mom_roe))
+        G_p = F_p_corr + Fp_mom_roe
+        Gp_p = Fp_p_corr + Fpp_mom_roe
+        Gm_p = Fm_p_corr + Fm_mom_roe
+        F_ener_corr = (1 + w*theta_ener)*(minmod(Fp_ener_lw - Fp_ener_roe, Fm_ener_lw - Fm_ener_roe))
+        Fp_ener_corr = (1 + w*thetap_ener)*(minmod(Fpp_ener_lw - Fpp_ener_roe, Fp_ener_lw - Fp_ener_roe))
+        Fm_ener_corr = (1 + w*thetam_ener)*(minmod(Fm_ener_lw - Fm_ener_roe, Fmm_ener_lw - Fmm_ener_roe))
+        G_ener = F_ener_corr + Fp_ener_roe
+        Gp_ener = Fp_ener_corr + Fpp_ener_roe
+        Gm_ener = Fm_ener_corr + Fm_ener_roe
+
+        den_rho_plus = U_new[i+1][0] - U_new[i][0]
+        if den_rho_plus == 0:
+            G_rho_plus = 0.5*(G_rho + Gp_rho - abs(0.5*(U_new[i][0] + U_new[i+1][0]))*(U_new[i+1][0] - U_new[i][0]))
+        else:
+            G_rho_plus = 0.5*(G_rho + Gp_rho - abs((Gp_rho - G_rho)/den_rho_plus)*(U_new[i+1][0] - U_new[i][0]))
+        den_rho_minus = U_new[i][0] - U_new[i-1][0]
+        if den_rho_minus == 0:
+            G_rho_minus = 0.5*(G_rho + Gm_rho - abs(0.5*(U_new[i-1][0] + U_new[i][0]))*(U_new[i][0] - U_new[i-1][0]))
+        else:
+            G_rho_minus = 0.5*(G_rho + Gm_rho - abs((G_rho - Gm_rho)/den_rho_minus)*(U_new[i][0] - U_new[i-1][0]))
+        den_p_plus = U_new[i+1][1] - U_new[i][1]
+        if den_p_plus == 0:
+            G_p_plus = 0.5*(G_p + Gp_p - abs(0.5*(U_new[i][1] + U_new[i+1][1]))*(U_new[i+1][1] - U_new[i][1]))
+        else:
+            G_p_plus = 0.5*(G_p + Gp_p - abs((Gp_p - G_p)/den_p_plus)*(U_new[i+1][1] - U_new[i][1]))
+        den_p_minus = U_new[i][1] - U_new[i-1][1]
+        if den_p_minus == 0:
+            G_p_minus = 0.5*(G_p + Gm_p - abs(0.5*(U_new[i-1][1] + U_new[i][1]))*(U_new[i][1] - U_new[i-1][1]))
+        else:
+            G_p_minus = 0.5*(G_p + Gm_p - abs((G_p - Gm_p)/den_p_minus)*(U_new[i][1] - U_new[i-1][1]))
+        den_ener_plus = U_new[i+1][2] - U_new[i][2]
+        if den_ener_plus == 0:
+            G_ener_plus = 0.5*(G_ener + Gp_ener - abs(0.5*(U_new[i][2] + U_new[i+1][2]))*(U_new[i+1][2] - U_new[i][2]))
+        else:
+            G_ener_plus = 0.5*(G_ener + Gp_ener - abs((Gp_ener - G_ener)/den_ener_plus)*(U_new[i+1][2] - U_new[i][2]))
+        den_ener_minus = U_new[i][2] - U_new[i-1][2]
+        if den_ener_minus == 0:
+            G_ener_minus = 0.5*(G_ener + Gm_ener - abs(0.5*(U_new[i-1][2] + U_new[i][2]))*(U_new[i][2] - U_new[i-1][2]))
+        else:
+            G_ener_minus = 0.5*(G_ener + Gm_ener - abs((G_ener - Gm_ener)/den_ener_minus)*(U_new[i][2] - U_new[i-1][2]))
+    
+        rho_new = U_new[i][0] - (dt/dx)*(G_rho_plus - G_rho_minus)
+        mom_new = U_new[i][1] - (dt/dx)*(G_p_plus - G_p_minus)
+        ener_new = U_new[i][2] - (dt/dx)*(G_ener_plus - G_ener_minus)
+        U_add.append([rho_new, mom_new, ener_new])
+
+    U_temp = U_new[:2] + U_add + U_new[-2:]
+    U_temp[0] = U_temp[1]
+    U_temp[-1] = U_temp[-2]
+    U_new = U_temp
+
+    if t + dt > final_time:
+        dt = final_time - t   
+    t = t + dt
+
+import matplotlib.pyplot as plt
+
+# -------------------------------
+# Initial solution
+# -------------------------------
+x = []
+rho_initial = []
+vel_initial = []
+p_initial = []
+
+for i in range(n_space+1):
+    x.append(i*dx)
+    rho_initial.append(U[i][0])
+
+    vel = U[i][1]/U[i][0]
+    vel_initial.append(vel)
+
+    ptemp = 0.4*(U[i][2] - 0.5*U[i][0]*vel**2)
+    p_initial.append(ptemp)
+
+rho_final = []
+vel_final = []
+p_final = []
+
+for i in range(n_space+1):
+    rho = U_new[i][0]
+    vel = U_new[i][1]/rho
+    p = 0.4*(U_new[i][2] - 0.5*rho*vel**2)
+    rho_final.append(rho)
+    vel_final.append(vel)
+    p_final.append(p)
+
+plt.figure(figsize=(8,5))
+plt.plot(x, rho_initial, '--', linewidth=2, label='Initial')
+plt.plot(x, rho_final, linewidth=2, label='Final')
+plt.xlabel('x')
+plt.ylabel('Density')
+plt.title('Density')
+plt.grid(True)
+plt.legend()
+plt.figure(figsize=(8,5))
+plt.plot(x, vel_initial, '--', linewidth=2, label='Initial')
+plt.plot(x, vel_final, linewidth=2, label='Final')
+plt.xlabel('x')
+plt.ylabel('Velocity')
+plt.title('Velocity')
+plt.grid(True)
+plt.legend()
+plt.figure(figsize=(8,5))
+plt.plot(x, p_initial, '--', linewidth=2, label='Initial')
+plt.plot(x, p_final, linewidth=2, label='Final')
+plt.xlabel('x')
+plt.ylabel('Pressure')
+plt.title('Pressure')
+plt.grid(True)
+plt.legend()
+plt.show()
