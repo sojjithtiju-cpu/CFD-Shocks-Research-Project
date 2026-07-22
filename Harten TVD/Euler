@@ -346,59 +346,45 @@ while t < final_time:
     t = t + dt
 
 import matplotlib.pyplot as plt
+import numpy as np
 
-# -------------------------------
-# Initial solution
-# -------------------------------
-x = []
-rho_initial = []
-vel_initial = []
-p_initial = []
-
-for i in range(n_space+1):
-    x.append(i*dx)
-    rho_initial.append(U[i][0])
-
-    vel = U[i][1]/U[i][0]
-    vel_initial.append(vel)
-
-    ptemp = 0.4*(U[i][2] - 0.5*U[i][0]*vel**2)
-    p_initial.append(ptemp)
-
+x = np.linspace(0, final_space, n_space + 1)
 rho_final = []
-vel_final = []
+u_final = []
 p_final = []
 
-for i in range(n_space+1):
-    rho = U_new[i][0]
-    vel = U_new[i][1]/rho
-    p = 0.4*(U_new[i][2] - 0.5*rho*vel**2)
-    rho_final.append(rho)
-    vel_final.append(vel)
-    p_final.append(p)
+for i in range(n_space + 1):
+    rho_i = U_new[i][0]
+    vel_i = U_new[i][1] / rho_i
+    p_i = 0.4 * (U_new[i][2] - 0.5 * rho_i * vel_i**2)
+    rho_final.append(rho_i)
+    u_final.append(vel_i)
+    p_final.append(p_i)
 
-plt.figure(figsize=(8,5))
-plt.plot(x, rho_initial, '--', linewidth=2, label='Initial')
-plt.plot(x, rho_final, linewidth=2, label='Final')
+plt.figure(figsize=(15,5))
+plt.subplot(1,3,1)
+plt.plot(x, rho, 'k--', linewidth=2, label='Initial')
+plt.plot(x, rho_final, 'r', linewidth=2, label='Final')
 plt.xlabel('x')
 plt.ylabel('Density')
 plt.title('Density')
 plt.grid(True)
 plt.legend()
-plt.figure(figsize=(8,5))
-plt.plot(x, vel_initial, '--', linewidth=2, label='Initial')
-plt.plot(x, vel_final, linewidth=2, label='Final')
+plt.subplot(1,3,2)
+plt.plot(x, u, 'k--', linewidth=2, label='Initial')
+plt.plot(x, u_final, 'b', linewidth=2, label='Final')
 plt.xlabel('x')
 plt.ylabel('Velocity')
 plt.title('Velocity')
 plt.grid(True)
 plt.legend()
-plt.figure(figsize=(8,5))
-plt.plot(x, p_initial, '--', linewidth=2, label='Initial')
-plt.plot(x, p_final, linewidth=2, label='Final')
+plt.subplot(1,3,3)
+plt.plot(x, p, 'k--', linewidth=2, label='Initial')
+plt.plot(x, p_final, 'g', linewidth=2, label='Final')
 plt.xlabel('x')
 plt.ylabel('Pressure')
 plt.title('Pressure')
 plt.grid(True)
 plt.legend()
+plt.tight_layout()
 plt.show()
