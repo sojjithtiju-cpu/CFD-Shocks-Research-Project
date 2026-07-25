@@ -1,0 +1,92 @@
+vel = float(input("Enter wave velocity : "))
+final_time = float(input("Enter final time : "))
+final_space = float(input("Enter final space : "))
+n_space = int(input("Enter no of space intervals : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_space
+dt = CFL*(dx/abs(vel))
+n_time = int(final_time/dt)
+
+def minabs(a, b):
+    if abs(a) <= abs(b):
+        return a
+    else:
+        return b
+
+def spac(a, b):
+    val = (-1/dx)*(a - b)
+    return val
+
+space = []
+for i in range(n_space):
+    val = i*dx
+    space.append(val)
+u_init = []
+for i in space:
+    if i < 1:
+        val = 1
+    else:
+        val = 0
+    u_init.append(val)
+u_new = u_init.copy()
+
+def flux_calc(l):
+    u = []
+    for i in range(n_space):
+        ip = (i+1)%n_space
+        ipp = (i+2)%n_space
+        im = (i-1)%n_space
+        imm = (i-2)%n_space
+
+        f_i_plus = 0.5*(vel*l[i] + l[i]*abs(vel))
+        f_i_minus = 0.5*(vel*l[i] - l[i]*abs(vel))
+        f_ip_plus = 0.5*(vel*l[ip] + l[ip]*abs(vel))
+        f_ip_minus = 0.5*(vel*l[ip] - l[ip]*abs(vel))
+        f_ipp_plus = 0.5*(vel*l[ipp] + l[ipp]*abs(vel))
+        f_ipp_minus = 0.5*(vel*l[ipp] - l[ipp]*abs(vel))
+        f_im_plus = 0.5*(vel*l[im] + l[im]*abs(vel))
+        f_im_minus = 0.5*(vel*l[im] - l[im]*abs(vel))
+        f_imm_plus = 0.5*(vel*l[imm] + l[imm]*abs(vel))
+        f_imm_minus = 0.5*(vel*l[imm] - l[imm]*abs(vel))
+
+        f1_r = f_i_plus + f_ip_minus
+        f1_l = f_im_plus + f_i_minus
+
+        delf_r_plus = f_ip_plus - f_i_plus
+        delf_rr_plus = f_ipp_plus - f_ip_plus
+        delf_l_plus = f_i_plus - f_im_plus
+        delf_ll_plus = f_im_plus - f_imm_plus
+        delf_r_minus = f_ip_minus - f_i_minus
+        delf_rr_minus = f_ipp_minus - f_ip_minus
+        delf_l_minus = f_i_minus - f_im_minus
+        delf_ll_minus = f_im_minus - f_imm_minus
+
+        f_plus = f1_r + 0.5*minabs(delf_r_plus, delf_l_plus) - 0.5*minabs(delf_rr_minus, delf_r_minus)
+        f_minus = f1_l + 0.5*minabs(delf_l_plus, delf_ll_plus) - 0.5*minabs(delf_r_minus, delf_l_minus)
+        x = spac(f_plus, f_minus)
+        u.append(x)
+    return u
+
+for t in range(n_time):
+    val1 = flux_calc(u_new)
+    u_pred = []
+    for i in range(n_space):
+        u_pred.append(u_new[i] + dt*val1[i])
+    val2= flux_calc(u_pred)
+    u = []
+    for i in range(n_space):
+        x = 0.5*u_new[i] + 0.5*u_pred[i] + 0.5*dt*val2[i]
+        u.append(x)
+    u_new = u.copy()
+
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(8,5))
+plt.plot(space, u_init, label="Initial", linewidth=2)
+plt.plot(space, u_new, label="Final", linewidth=2)
+plt.xlabel("x")
+plt.ylabel("u")
+plt.title("Shu Osher ENO - Linear Advection")
+plt.grid(True)
+plt.legend()
+plt.show()
