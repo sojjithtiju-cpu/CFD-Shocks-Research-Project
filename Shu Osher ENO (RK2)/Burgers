@@ -51,13 +51,11 @@ def flux_calc(l):
         f1_l = f_im_plus + f_i_minus
 
         delf_r_plus = f_ip_plus - f_i_plus
-        delf_rr_plus = f_ipp_plus - f_ip_plus
         delf_l_plus = f_i_plus - f_im_plus
         delf_ll_plus = f_im_plus - f_imm_plus
         delf_r_minus = f_ip_minus - f_i_minus
         delf_rr_minus = f_ipp_minus - f_ip_minus
         delf_l_minus = f_i_minus - f_im_minus
-        delf_ll_minus = f_im_minus - f_imm_minus
 
         f_plus = f1_r + 0.5*minabs(delf_r_plus, delf_l_plus) - 0.5*minabs(delf_rr_minus, delf_r_minus)
         f_minus = f1_l + 0.5*minabs(delf_l_plus, delf_ll_plus) - 0.5*minabs(delf_r_minus, delf_l_minus)
