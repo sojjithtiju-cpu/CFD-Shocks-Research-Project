@@ -1,0 +1,195 @@
+final_time = float(input("Enter final time : "))
+final_space = 1
+n_spacex = int(input("Enter no of space intervals for x : "))
+n_spacey = int(input("Enter no of space intervals for y : "))
+CFL = float(input("Enter CFL number : "))
+dx = final_space/n_spacex
+dy = final_space/n_spacey
+
+rho = [[0.0]*(n_spacey + 1) for i in range(n_spacex + 1)]
+u   = [[0.0]*(n_spacey + 1) for i in range(n_spacex + 1)]
+v   = [[0.0]*(n_spacey + 1) for i in range(n_spacex + 1)]
+p   = [[0.0]*(n_spacey + 1) for i in range(n_spacex + 1)]
+
+for i in range(n_spacex + 1):
+    for j in range(n_spacey + 1):
+        if i <= n_spacex/2 and j >= n_spacey/2:
+            rho[i][j] = 1.5
+            u[i][j] = 0.0
+            v[i][j] = 0.0
+            p[i][j] = 1.5
+        elif i > n_spacex/2 and j > n_spacey/2:
+            rho[i][j] = 0.5323
+            u[i][j] = 1.206
+            v[i][j] = 0.0
+            p[i][j] = 0.3
+        elif i < n_spacex/2 and j < n_spacey/2:
+            rho[i][j] = 0.5323
+            u[i][j] = 0.0
+            v[i][j] = 1.206
+            p[i][j] = 0.3
+        else:
+            rho[i][j] = 0.138
+            u[i][j] = 1.206
+            v[i][j] = 1.206
+            p[i][j] = 0.029
+        
+U = [[None]*(n_spacey+1) for i in range(n_spacex+1)]
+for i in range(n_spacex+1):
+    for j in range(n_spacey+1):
+        rho_init = rho[i][j]
+        momu_init = rho[i][j]*u[i][j]
+        momv_init = rho[i][j]*v[i][j]
+        ener_init = 2.5*p[i][j] + 0.5*rho[i][j]*(u[i][j]**2 + v[i][j]**2)
+        U[i][j] = [rho_init, momu_init, momv_init, ener_init]
+
+import copy 
+U_new = copy.deepcopy(U)
+t = 0
+while t < final_time:
+
+    soundx = []
+    soundy = []
+    for i in range(1, n_spacex):
+        for j in range(1, n_spacey):
+            velu = U_new[i][j][1]/U_new[i][j][0]
+            velv = U_new[i][j][2]/U_new[i][j][0]
+            pressure = 0.4*(U_new[i][j][3] - 0.5*U_new[i][j][0]*(velu**2 + velv**2))
+            sound = (1.4*pressure/U_new[i][j][0])**0.5
+            soundx.append(abs(velu) + sound)
+            soundy.append(abs(velv) + sound)
+    dt = CFL*min((dx/max(soundx)), (dy/max(soundy)))
+
+    if t + dt > final_time:
+        dt = final_time - t
+            
+    U_add = [[None]*(n_spacey+1) for i in range(n_spacex+1)]
+
+    for i in range(1, n_spacex):
+        for j in range(1, n_spacey):
+            velu_l = U_new[i-1][j][1]/U_new[i-1][j][0]
+            velu_r = U_new[i+1][j][1]/U_new[i+1][j][0]
+            velv_l = U_new[i-1][j][2]/U_new[i-1][j][0]
+            velv_r = U_new[i+1][j][2]/U_new[i+1][j][0]
+            velv_d = U_new[i][j-1][2]/U_new[i][j-1][0]
+            velv_u = U_new[i][j+1][2]/U_new[i][j+1][0]
+            velu_d = U_new[i][j-1][1]/U_new[i][j-1][0]
+            velu_u = U_new[i][j+1][1]/U_new[i][j+1][0]
+
+            p_l = 0.4*(U_new[i-1][j][3] - 0.5*U_new[i-1][j][0]*(velu_l**2 + velv_l**2))
+            p_r = 0.4*(U_new[i+1][j][3] - 0.5*U_new[i+1][j][0]*(velu_r**2 + velv_r**2))
+            p_d = 0.4*(U_new[i][j-1][3] - 0.5*U_new[i][j-1][0]*(velu_d**2 + velv_d**2))
+            p_u = 0.4*(U_new[i][j+1][3] - 0.5*U_new[i][j+1][0]*(velu_u**2 + velv_u**2))
+            
+            rho_new = 0.25*(U_new[i+1][j][0] + U_new[i-1][j][0] + U_new[i][j+1][0] + U_new[i][j-1][0]) - 0.5*(dt/dx)*(U_new[i+1][j][0]*velu_r - U_new[i-1][j][0]*velu_l) - 0.5*(dt/dy)*(U_new[i][j+1][0]*velv_u - U_new[i][j-1][0]*velv_d)
+            momu_new = 0.25*(U_new[i+1][j][1] + U_new[i-1][j][1] + U_new[i][j+1][1] + U_new[i][j-1][1]) - 0.5*(dt/dx)*(U_new[i+1][j][0]*velu_r**2 + p_r - U_new[i-1][j][0]*velu_l**2 - p_l) - 0.5*(dt/dy)*(U_new[i][j+1][0]*velu_u*velv_u - U_new[i][j-1][0]*velu_d*velv_d)
+            momv_new = 0.25*(U_new[i+1][j][2] + U_new[i-1][j][2] + U_new[i][j+1][2] + U_new[i][j-1][2]) - 0.5*(dt/dx)*(U_new[i+1][j][0]*velu_r*velv_r - U_new[i-1][j][0]*velu_l*velv_l) - 0.5*(dt/dy)*(U_new[i][j+1][0]*velv_u**2 + p_u - U_new[i][j-1][0]*velv_d**2 - p_d)
+            ener_new = 0.25*(U_new[i+1][j][3] + U_new[i-1][j][3] + U_new[i][j+1][3] + U_new[i][j-1][3]) - 0.5*(dt/dx)*(velu_r*(U_new[i+1][j][3] + p_r) - velu_l*(U_new[i-1][j][3] + p_l)) - 0.5*(dt/dy)*(velv_u*(U_new[i][j+1][3] + p_u) - velv_d*(U_new[i][j-1][3] + p_d))
+
+            U_add[i][j] = [rho_new, momu_new, momv_new, ener_new]
+
+    for j in range(1, n_spacey):
+        U_add[0][j] = U_add[1][j][:]
+        U_add[n_spacex][j] = U_add[n_spacex-1][j][:]
+
+    for i in range(n_spacex+1):
+        U_add[i][0] = U_add[i][1][:]
+        U_add[i][n_spacey] = U_add[i][n_spacey-1][:]
+
+    U_new = copy.deepcopy(U_add)
+    t = t + dt
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+rho_plot = np.zeros((n_spacex + 1, n_spacey + 1))
+u_plot   = np.zeros((n_spacex + 1, n_spacey + 1))
+v_plot   = np.zeros((n_spacex + 1, n_spacey + 1))
+p_plot   = np.zeros((n_spacex + 1, n_spacey + 1))
+
+for i in range(n_spacex + 1):
+    for j in range(n_spacey + 1):
+        rho_plot[i, j] = U_new[i][j][0]
+        u_plot[i, j] = U_new[i][j][1] / U_new[i][j][0]
+        v_plot[i, j] = U_new[i][j][2] / U_new[i][j][0]
+        p_plot[i, j] = 0.4 * (U_new[i][j][3] - 0.5 * U_new[i][j][0] * (u_plot[i, j]**2 + v_plot[i, j]**2))
+
+x = np.linspace(0, final_space, n_spacex + 1)
+y = np.linspace(0, final_space, n_spacey + 1)
+X, Y = np.meshgrid(x, y, indexing='ij')
+
+plt.figure(figsize=(7,6))
+plt.contourf(X, Y, rho_plot, levels=50)
+plt.colorbar(label='Density')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('2D Euler Lax-Friedrichs: Density')
+plt.axis('equal')
+plt.show()
+
+plt.figure(figsize=(7,6))
+plt.contourf(X, Y, u_plot, levels=50)
+plt.colorbar(label='x-Velocity')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('2D Euler Lax-Friedrichs: x-Velocity')
+plt.axis('equal')
+plt.show()
+
+# y-Velocity
+plt.figure(figsize=(7,6))
+plt.contourf(X, Y, v_plot, levels=50)
+plt.colorbar(label='y-Velocity')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('2D Euler Lax-Friedrichs: y-Velocity')
+plt.axis('equal')
+plt.show()
+
+# Pressure
+plt.figure(figsize=(7,6))
+plt.contourf(X, Y, p_plot, levels=50)
+plt.colorbar(label='Pressure')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('2D Euler Lax-Friedrichs: Pressure')
+plt.axis('equal')
+plt.show()
+
+from mpl_toolkits.mplot3d import Axes3D
+
+fig = plt.figure(figsize=(8,6))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(X, Y, rho_plot, cmap='viridis')
+ax.set_title('2D Euler Lax-Friedrichs: Density (3D)')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Density')
+plt.show()
+
+fig = plt.figure(figsize=(8,6))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(X, Y, u_plot, cmap='viridis')
+ax.set_title('2D Euler Lax-Friedrichs: x-Velocity (3D)')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('x-Velocity')
+plt.show()
+
+fig = plt.figure(figsize=(8,6))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(X, Y, v_plot, cmap='viridis')
+ax.set_title('2D Euler Lax-Friedrichs: y-Velocity (3D)')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('y-Velocity')
+plt.show()
+
+fig = plt.figure(figsize=(8,6))
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(X, Y, p_plot, cmap='viridis')
+ax.set_title('2D Euler Lax-Friedrichs: Pressure (3D)')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('Pressure')
+plt.show()
